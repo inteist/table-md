@@ -31,7 +31,8 @@ Output:
 
 ## Features
 
-See [EXAMPLES.md](EXAMPLES.md) for supported border styles and input/output samples.
+See [EXAMPLES.md](EXAMPLES.md) for supported border styles and input/output
+samples.
 
 - Unicode light, heavy, double, rounded, dashed, and mixed border styles.
 - ASCII boxes such as `+---+` with `|`-delimited cells.

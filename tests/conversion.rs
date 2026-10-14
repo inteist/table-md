@@ -313,3 +313,44 @@ fn prose_ending_in_pipe_does_not_cause_extra_blank_lines() {
         "| A |\n| --- |\n| 1 |\nprose|\n| B |\n| --- |\n| 2 |"
     );
 }
+
+#[test]
+fn malformed_outer_delimiters_pass_through_unchanged() {
+    for line in [
+        "│ missing end",
+        "missing start │",
+        "│ mismatched ║",
+        "┃ mismatched │",
+        "| mismatched │",
+        "│ mismatched |",
+        "│ - ║",
+        "┃ ─ │",
+        "| missing end",
+        "missing start |",
+        "╎ unsupported ╎",
+        "┆ unsupported ┆",
+    ] {
+        let input = format!("Before  \r\n{line}\r\nAfter  ");
+        let result = convert(&input);
+        assert_eq!(result.markdown, input, "{line:?}");
+        assert_eq!(result.table_count, 0, "{line:?}");
+        assert_eq!(result.warnings.len(), 1, "{line:?}");
+    }
+}
+
+#[test]
+fn unusual_rule_like_text_is_not_consumed_next_to_valid_rows() {
+    for line in ["───", "━━━", "═══", "┄┄┄", "╱──╲", "│ - ║", "┌─oops─┐"]
+    {
+        let input = format!("{line}\n│ Header │\n│ Value │\n{line}");
+        let result = convert(&input);
+        assert_eq!(
+            result.markdown,
+            format!("{line}\n| Header |\n| --- |\n| Value |\n{line}"),
+            "{line:?}"
+        );
+        assert_eq!(result.table_count, 1, "{line:?}");
+        assert_eq!(result.row_count, 1, "{line:?}");
+        assert!(result.warnings.is_empty(), "{line:?}");
+    }
+}

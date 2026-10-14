@@ -1,0 +1,19 @@
+[package]
+name = "table-md"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Convert Unicode and ASCII box tables into Markdown tables"
+keywords = ["markdown", "table", "unicode", "cli"]
+categories = ["command-line-utilities", "text-processing"]
+
+[features]
+default = ["cli"]
+cli = []
+
+[[bin]]
+name = "table-md"
+path = "src/main.rs"
+required-features = ["cli"]
+
+[dependencies]

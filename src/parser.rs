@@ -201,9 +201,11 @@ fn is_horizontal_rule(line: &str) -> bool {
             '+' => has_corner = true,
             '-' | '=' => has_rule = true,
             ':' => {}
-            '\u{2500}'..='\u{257f}' => {
+            '─' | '━' | '═' | '╌' | '╍' | '┄' | '┅' | '┈' | '┉' => {
+                has_rule = true
+            }
+            '\u{250c}'..='\u{254b}' | '\u{2552}'..='\u{256c}' | '\u{256d}'..='\u{2570}' => {
                 has_corner = true;
-                has_rule |= matches!(ch, '─' | '━' | '═' | '╌' | '╍' | '┄' | '┅' | '┈' | '┉');
             }
             _ => return false,
         }

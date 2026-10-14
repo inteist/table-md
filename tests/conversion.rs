@@ -354,3 +354,100 @@ fn unusual_rule_like_text_is_not_consumed_next_to_valid_rows() {
         assert!(result.warnings.is_empty(), "{line:?}");
     }
 }
+
+#[test]
+fn single_delimiters_and_isolated_box_glyphs_are_preserved() {
+    for input in ["│", "┃", "║", "|", "┌", "┼", "╳", "+", "-", "="] {
+        let result = convert(input);
+        assert_eq!(result.markdown, input);
+        assert_eq!(result.table_count, 0);
+        assert_eq!(result.column_count, 0);
+    }
+}
+
+#[test]
+fn paired_delimiters_represent_one_empty_cell_without_panicking() {
+    for delimiter in ['│', '┃', '║', '|'] {
+        let input = format!("{delimiter}{delimiter}");
+        let result = convert(&input);
+        assert_eq!(result.markdown, "|  |\n| --- |");
+        assert_eq!(result.table_count, 1);
+        assert_eq!(result.column_count, 1);
+        assert_eq!(result.row_count, 0);
+        assert_eq!(result.warnings, ["Only a header row was found."]);
+    }
+}
+
+#[test]
+fn incomplete_boxes_still_convert_recognized_rows() {
+    for input in [
+        "┌───┐\n│ H │\n│ V │",
+        "│ H │\n│ V │\n└───┘",
+        "┌───┐\n│ H │\n├───┤\n│ V │",
+        "+---+\n| H |\n| V |",
+    ] {
+        let result = convert(input);
+        assert_eq!(result.markdown, "| H |\n| --- |\n| V |", "{input:?}");
+        assert_eq!(result.table_count, 1);
+        assert_eq!(result.row_count, 1);
+        assert!(result.warnings.is_empty());
+    }
+}
+
+#[test]
+fn malformed_line_between_tables_is_preserved_with_surrounding_prose() {
+    let input = "Before\n│ H │\n│ A │\n│ - ║\n│ J │\n│ B │\nAfter";
+    let result = convert(input);
+    assert_eq!(
+        result.markdown,
+        "Before\n| H |\n| --- |\n| A |\n│ - ║\n| J |\n| --- |\n| B |\nAfter"
+    );
+    assert_eq!(result.table_count, 2);
+    assert_eq!(result.row_count, 2);
+    assert!(result.warnings.is_empty());
+}
+
+#[test]
+fn box_drawing_content_inside_cells_remains_data() {
+    let input = "│ Header │\n│ ┌─┬─┐ │\n│ ╱ ╲ ╳ │\n│ ┼ ╬ ┿ │";
+    let result = convert(input);
+    assert_eq!(
+        result.markdown,
+        "| Header |\n| --- |\n| ┌─┬─┐ |\n| ╱ ╲ ╳ |\n| ┼ ╬ ┿ |"
+    );
+    assert_eq!(result.row_count, 3);
+    assert!(result.warnings.is_empty());
+}
+
+#[test]
+fn differing_supported_row_delimiters_and_widths_are_handled() {
+    let result = convert("│ A │ B │\n┃ 1 ┃\n║ 2 │ 3 ┃ 4 ║");
+    assert_eq!(
+        result.markdown,
+        "| A | B |  |\n| --- | --- | --- |\n| 1 |  |  |\n| 2 | 3 | 4 |"
+    );
+    assert_eq!(result.column_count, 3);
+    assert_eq!(result.row_count, 2);
+    assert_eq!(
+        result.warnings,
+        [
+            "Row 1 has 2 columns; padded to 3.",
+            "Row 2 has 1 columns; padded to 3.",
+        ]
+    );
+}
+
+#[test]
+fn malformed_border_only_blocks_are_preserved() {
+    for input in [
+        "┌───\n└───",
+        "╔═══╗\n╚═══╝",
+        "+---\n---+",
+        "┌───┐\n├───┤\n└───┘",
+    ] {
+        let result = convert(input);
+        assert_eq!(result.markdown, input);
+        assert_eq!(result.table_count, 0);
+        assert_eq!(result.row_count, 0);
+    }
+}

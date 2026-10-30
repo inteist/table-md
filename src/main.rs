@@ -9,8 +9,9 @@ const HELP: &str = "table-md — convert Unicode and ASCII box tables to Markdow
 Usage: table-md [OPTIONS]
 
 Reads UTF-8 text from stdin and writes converted Markdown to stdout.
-By default, blank-first-cell lines in bordered tables continue the previous row.
-Use --single-line for empty-first-cell rows, or --multiline for wrapped cells.
+By default, body-row rules group wrapped cells; otherwise blank first cells
+continue the previous row in bordered tables.
+Use --single-line for one row per line, or --multiline to force rule-based grouping.
 When entering text directly, finish input with Ctrl-D (Unix) or Ctrl-Z (Windows).
 
 Options:

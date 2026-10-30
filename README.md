@@ -169,10 +169,12 @@ was converted.
 Wrapped cells and separate rows with empty first columns can look identical.
 Choose the mode that matches the source:
 
-- **`RowMode::Auto` (default):** In bordered tables, a content line whose first
-  cell is empty continues the previous row. Horizontal rules end a logical row.
-  Empty fragments are omitted when joining cells, matching the template's
-  heuristic.
+- **`RowMode::Auto` (default):** If horizontal rules separate body rows, all
+  content lines between rules form one row, even when the first cell is nonempty.
+  Otherwise, in bordered tables, a line whose first cell is empty continues the
+  previous row. A header separator alone does not enable multiline grouping.
+  Empty fragments are omitted when joining cells. For a single wrapped body row
+  with no other body-row separators, use `RowMode::Multiline` explicitly.
 - **`RowMode::SingleLine`:** Every content line is a row. Use this when empty
   first cells are actual data rather than continuation markers.
 - **`RowMode::Multiline`:** All content lines between horizontal rules form one

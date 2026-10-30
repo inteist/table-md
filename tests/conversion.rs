@@ -65,6 +65,70 @@ fn joins_blank_first_cell_continuations() {
 }
 
 #[test]
+fn auto_mode_joins_wrapped_headers_and_omits_empty_fragments() {
+    let input = include_str!("fixtures/wrapped-headers.input.md");
+    let result = convert(input);
+    assert_eq!(
+        result.markdown,
+        include_str!("fixtures/wrapped-headers.expected.md")
+    );
+    assert_eq!(result.row_count, 2);
+    assert!(result.warnings.is_empty());
+}
+
+#[test]
+fn auto_mode_joins_rule_separated_ascii_rows_unless_single_line_is_requested() {
+    let input = "+---+---+\n| A | B |\n+---+---+\n| first | one |\n| part | two |\n+---+---+\n| next | three |\n+---+---+";
+    for (row_mode, expected, row_count) in [
+        (
+            RowMode::Auto,
+            "| A | B |\n| --- | --- |\n| first<br>part | one<br>two |\n| next | three |",
+            2,
+        ),
+        (
+            RowMode::SingleLine,
+            "| A | B |\n| --- | --- |\n| first | one |\n| part | two |\n| next | three |",
+            3,
+        ),
+    ] {
+        let result = convert_with_options(
+            input,
+            Options {
+                row_mode,
+                ..Options::default()
+            },
+        );
+        assert_eq!(result.markdown, expected, "{row_mode:?}");
+        assert_eq!(result.row_count, row_count);
+        assert!(result.warnings.is_empty());
+    }
+}
+
+#[test]
+fn auto_mode_detects_row_separators_without_a_header() {
+    let input =
+        "+---+---+\n| first | one |\n| part | two |\n+---+---+\n| next | three |\n+---+---+";
+    let result = parse_ascii_table(input, false);
+    assert_eq!(
+        result.markdown,
+        "| Column 1 | Column 2 |\n| --- | --- |\n| first<br>part | one<br>two |\n| next | three |"
+    );
+    assert_eq!(result.row_count, 2);
+    assert!(result.warnings.is_empty());
+}
+
+#[test]
+fn auto_mode_keeps_unseparated_rows_without_a_header() {
+    let input = "+---+---+\n| first | one |\n| next | two |\n+---+---+";
+    let result = parse_ascii_table(input, false);
+    assert_eq!(
+        result.markdown,
+        "| Column 1 | Column 2 |\n| --- | --- |\n| first | one |\n| next | two |"
+    );
+    assert_eq!(result.row_count, 2);
+}
+
+#[test]
 fn multiline_option_joins_nonempty_first_cells_between_rules() {
     let input = "┌───┬───┐\n│ Name │ Notes │\n├───┼───┤\n│ first │ one │\n│ second │ two │\n├───┼───┤\n│ next │ three │\n└───┴───┘";
     let result = convert_with_options(

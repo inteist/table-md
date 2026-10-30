@@ -109,6 +109,17 @@ fn multiline_joins_cell_lines_between_rules() {
 }
 
 #[test]
+fn default_mode_joins_wrapped_cells_in_rule_separated_rows() {
+    let input = include_str!("fixtures/wrapped-cells.input.md");
+    let output = run(&[], input.as_bytes());
+    assert_success(
+        &output,
+        include_str!("fixtures/wrapped-cells.expected.md"),
+        "",
+    );
+}
+
+#[test]
 fn conversion_warnings_go_to_stderr_not_stdout() {
     let output = run(&[], RAGGED_TABLE.as_bytes());
     assert_success(&output, RAGGED_MARKDOWN, RAGGED_WARNING);

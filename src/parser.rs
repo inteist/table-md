@@ -122,7 +122,7 @@ fn convert_table_block(block: &[&str], options: Options) -> Option<ParsedTable> 
     if is_markdown_table(block) {
         return None;
     }
-    let groups = collect_row_groups(block, options.row_mode);
+    let groups = collect_row_groups(block, options);
     let mut rows: Vec<Vec<String>> = groups
         .into_iter()
         .map(|group| collapse_group(group, options.row_mode))
@@ -159,8 +159,18 @@ fn convert_table_block(block: &[&str], options: Options) -> Option<ParsedTable> 
     })
 }
 
-fn collect_row_groups<'a>(block: &[&'a str], row_mode: RowMode) -> Vec<Vec<&'a str>> {
+fn collect_row_groups<'a>(block: &[&'a str], options: Options) -> Vec<Vec<&'a str>> {
     let has_rules = block.iter().any(|line| is_horizontal_rule(line.trim()));
+    let rule_group_count = block
+        .split(|line| is_horizontal_rule(line.trim()))
+        .filter(|group| {
+            group
+                .iter()
+                .any(|line| detect_cell_delimiter(line.trim()).is_some())
+        })
+        .count();
+    // A header separator alone does not imply that body rows are rule-separated.
+    let has_row_separators = rule_group_count > usize::from(options.first_row_is_header) + 1;
     let mut groups = Vec::new();
     let mut current = Vec::new();
 
@@ -173,8 +183,8 @@ fn collect_row_groups<'a>(block: &[&'a str], row_mode: RowMode) -> Vec<Vec<&'a s
         } else if let Some(delimiter) = detect_cell_delimiter(trimmed) {
             let first_cell_empty = split_cells(trimmed, delimiter)[0].trim().is_empty();
             let starts_row = !has_rules
-                || match row_mode {
-                    RowMode::Auto => !first_cell_empty,
+                || match options.row_mode {
+                    RowMode::Auto => !has_row_separators && !first_cell_empty,
                     RowMode::SingleLine => true,
                     RowMode::Multiline => false,
                 };
